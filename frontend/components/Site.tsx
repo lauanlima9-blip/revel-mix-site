@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useMemo,useState,type FormEvent} from 'react';
 import {motion} from 'framer-motion';
 import {ArrowRight,CheckCircle2,Instagram,Mail,Menu,Phone,ShieldCheck,Sparkles,Star,Upload,X} from 'lucide-react';
 import {Gallery,Item} from 'react-photoswipe-gallery';
@@ -28,4 +28,38 @@ export default function Site({data}:{data:any}){
  </main>
 }
 function Reviews({reviews,post}:{reviews:any[];post:any}){const[msg,setMsg]=useState('');return <section id="avaliacoes" className="section bg-zinc-950"><div className="container-site grid gap-10 lg:grid-cols-2"><motion.div {...reveal}><span className="text-gold">AVALIAÇÕES</span><h2 className="mt-3 text-4xl font-black md:text-6xl">Compartilhe sua experiência.</h2><div className="mt-7 space-y-4">{reviews.slice(0,3).map(r=><div className="glass rounded-2xl p-5" key={r.id}><div className="flex text-gold">{Array.from({length:r.rating}).map((_,i)=><Star fill="currentColor" size={16} key={i}/>)}</div><p className="mt-3">“{r.comment}”</p><small className="text-zinc-500">{r.name}{r.city?` • ${r.city}`:''}</small>{r.response&&<p className="mt-3 border-l-2 border-gold pl-3 text-sm text-zinc-400">Resposta da Revel Mix: {r.response}</p>}</div>)}</div></motion.div><form className="glass rounded-[2rem] p-7" onSubmit={e=>{e.preventDefault();post('reviews',e.currentTarget,setMsg)}}><input name="name" required className="input" placeholder="Nome"/><input name="city" className="input mt-3" placeholder="Cidade (opcional)"/><select name="rating" className="input mt-3" defaultValue="5"><option value="5">5 estrelas</option><option value="4">4 estrelas</option><option value="3">3 estrelas</option><option value="2">2 estrelas</option><option value="1">1 estrela</option></select><textarea name="comment" required minLength={10} className="input mt-3 min-h-36" placeholder="Comentário"/><button className="btn btn-gold mt-5 w-full">Enviar Avaliação</button>{msg&&<p className="mt-4 text-sm text-gold">{msg}</p>}</form></div></section>}
-function Contact({post}:{post:any}){const[msg,setMsg]=useState('');return <section id="contato" className="section"><div className="container-site grid gap-10 lg:grid-cols-2"><motion.div {...reveal}><span className="text-gold">CONTATO</span><h2 className="mt-3 text-4xl font-black md:text-6xl">Vamos transformar seu espaço.</h2><div className="mt-7 space-y-4"><a href={wa} target="_blank" className="glass flex items-center gap-4 rounded-2xl p-5"><Phone className="text-gold"/> (11) 96312-3807</a><a href="mailto:Rivelmixrevestimentos@gmail.com" className="glass flex items-center gap-4 rounded-2xl p-5"><Mail className="text-gold"/> Rivelmixrevestimentos@gmail.com</a></div><div className="mt-5 flex gap-3"><a className="btn btn-gold" href={wa} target="_blank">Falar no WhatsApp</a><a className="btn btn-ghost" href="mailto:Rivelmixrevestimentos@gmail.com">Enviar E-mail</a></div></motion.div><form className="glass rounded-[2rem] p-7" onSubmit={e=>{e.preventDefault();post('contact',e.currentTarget,setMsg)}}><input name="name" required className="input" placeholder="Nome"/><div className="grid gap-3 md:grid-cols-2"><input name="phone" required className="input mt-3" placeholder="Telefone"/><input name="email" type="email" required className="input mt-3" placeholder="E-mail"/></div><select name="serviceType" className="input mt-3"><option>Uretano</option><option>Piso Epóxi</option><option>Tecnocimento</option></select><input name="area" type="number" min="0" className="input mt-3" placeholder="Área aproximada (m²)"/><textarea name="message" required className="input mt-3 min-h-32" placeholder="Mensagem"/><button className="btn btn-gold mt-5 w-full">Solicitar Orçamento</button>{msg&&<p className="mt-4 text-sm text-gold">{msg}</p>}</form></div></section>}
+function Contact({post}:{post:any}){
+ const[msg,setMsg]=useState('');
+ const[sending,setSending]=useState(false);
+ async function submitQuote(e:FormEvent<HTMLFormElement>){
+  e.preventDefault();
+  const form=e.currentTarget;
+  const data=Object.fromEntries(new FormData(form)) as Record<string,string>;
+  const whatsappMessage=[
+   'Olá! Gostaria de solicitar um orçamento para um revestimento da Revel Mix Revestimentos.',
+   '',
+   `Nome: ${data.name}`,
+   `Telefone: ${data.phone}`,
+   `E-mail: ${data.email}`,
+   `Tipo de serviço: ${data.serviceType}`,
+   `Área aproximada: ${data.area||'Não informada'} m²`,
+   `Mensagem: ${data.message}`
+  ].join('\n');
+  const whatsappUrl=`https://wa.me/5511963123807?text=${encodeURIComponent(whatsappMessage)}`;
+  const whatsappWindow=window.open('about:blank','_blank');
+  setSending(true);
+  try{
+   const response=await fetch(`${API}/contact`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,area:data.area?Number(data.area):null})});
+   const result=await response.json();
+   setMsg(result.message||'Não foi possível enviar.');
+   if(!response.ok){whatsappWindow?.close();return;}
+   form.reset();
+   if(whatsappWindow)whatsappWindow.location.href=whatsappUrl;
+   else window.location.href=whatsappUrl;
+  }catch{
+   whatsappWindow?.close();
+   setMsg('Não foi possível enviar. Tente novamente.');
+  }finally{setSending(false);}
+ }
+ return <section id="contato" className="section"><div className="container-site grid gap-10 lg:grid-cols-2"><motion.div {...reveal}><span className="text-gold">CONTATO</span><h2 className="mt-3 text-4xl font-black md:text-6xl">Vamos transformar seu espaço.</h2><div className="mt-7 space-y-4"><a href={wa} target="_blank" className="glass flex items-center gap-4 rounded-2xl p-5"><Phone className="text-gold"/> (11) 96312-3807</a><a href="mailto:Rivelmixrevestimentos@gmail.com" className="glass flex items-center gap-4 rounded-2xl p-5"><Mail className="text-gold"/> Rivelmixrevestimentos@gmail.com</a></div><div className="mt-5 flex gap-3"><a className="btn btn-gold" href={wa} target="_blank">Falar no WhatsApp</a><a className="btn btn-ghost" href="mailto:Rivelmixrevestimentos@gmail.com">Enviar E-mail</a></div></motion.div><form className="glass rounded-[2rem] p-7" onSubmit={submitQuote}><input name="name" required className="input" placeholder="Nome"/><div className="grid gap-3 md:grid-cols-2"><input name="phone" required className="input mt-3" placeholder="Telefone"/><input name="email" type="email" required className="input mt-3" placeholder="E-mail"/></div><select name="serviceType" className="input mt-3"><option>Uretano</option><option>Piso Epóxi</option><option>Tecnocimento</option></select><input name="area" type="number" min="0" className="input mt-3" placeholder="Área aproximada (m²)"/><textarea name="message" required className="input mt-3 min-h-32" placeholder="Mensagem"/><button disabled={sending} className="btn btn-gold mt-5 w-full disabled:cursor-not-allowed disabled:opacity-60">{sending?'Enviando...':'Solicitar Orçamento pelo WhatsApp'}</button>{msg&&<p className="mt-4 text-sm text-gold">{msg}</p>}</form></div></section>
+}
