@@ -14,6 +14,9 @@ import { requireAuth } from './middleware/auth.js';
 
 const prisma=new PrismaClient();
 const app=express();
+// O Render encaminha o IP real através de X-Forwarded-For.
+// Confiar no primeiro proxy evita bloqueios incorretos do express-rate-limit.
+app.set('trust proxy', 1);
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 app.use(helmet({crossOriginResourcePolicy:{policy:'cross-origin'}}));
 app.use(cors({origin:process.env.FRONTEND_URL?.split(',') || '*'}));
