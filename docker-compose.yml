@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: revelmix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: RevelMix2026
+      POSTGRES_DB: revelmix
+    ports:
+      - "5432:5432"
+    volumes:
+      - revelmix_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d revelmix"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    container_name: revelmix-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:RevelMix2026@postgres:5432/revelmix?schema=public
+      JWT_SECRET: revel-mix-chave-secreta-2026-mude-em-producao
+      FRONTEND_URL: http://localhost:3000
+      ADMIN_EMAIL: admin@revelmix.com.br
+      ADMIN_PASSWORD: TroqueEstaSenha123!
+    ports:
+      - "4000:4000"
+    volumes:
+      - revelmix_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api
+    container_name: revelmix-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      INTERNAL_API_URL: http://backend:4000/api
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api
+    ports:
+      - "3000:3000"
+
+volumes:
+  revelmix_postgres_data:
+  revelmix_uploads:

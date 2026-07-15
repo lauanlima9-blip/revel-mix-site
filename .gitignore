@@ -1,0 +1,21 @@
+﻿# Dependências
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build
+.next/
+frontend/.next/
+dist/
+build/
+
+# Variáveis de ambiente
+.env
+.env.*
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db

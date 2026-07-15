@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum GalleryCategory {
+  URETANO
+  EPOXI
+  TECNOCIMENTO
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String
+  pricePerM2  Decimal  @db.Decimal(10, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GalleryImage {
+  id        Int             @id @default(autoincrement())
+  title     String?
+  url       String
+  category  GalleryCategory
+  active    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+}
+
+model Review {
+  id        Int          @id @default(autoincrement())
+  name      String
+  city      String?
+  rating    Int
+  comment   String
+  response  String?
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model ContactMessage {
+  id          Int      @id @default(autoincrement())
+  name        String
+  phone       String
+  email       String
+  serviceType String
+  area        Float?
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
