@@ -61,7 +61,42 @@ app.get('/api/admin/dashboard',requireAuth,async(_,res)=>{
   res.json({services:services.map(s=>({...s,pricePerM2:Number(s.pricePerM2)})),gallery,reviews,messages,settings:Object.fromEntries(settings.map(s=>[s.key,s.value]))});
 });
 app.put('/api/admin/services/:id',requireAuth,async(req,res)=>{const data=z.object({title:z.string(),description:z.string(),pricePerM2:z.number().positive(),active:z.boolean()}).parse(req.body);res.json(await prisma.service.update({where:{id:Number(req.params.id)},data}));});
-app.patch('/api/admin/reviews/:id',requireAuth,async(req,res)=>{const data=z.object({status:z.enum(['PENDING','APPROVED','REJECTED']).optional(),response:z.string().max(1000).nullable().optional()}).parse(req.body);res.json(await prisma.review.update({where:{id:Number(req.params.id)},data}));});
+app.patch('/api/admin/reviews/:id', requireAuth, async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ message: 'Avaliação inválida.' });
+    }
+
+    const parsed = z.object({
+      status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
+      response: z.string().max(1000).nullable().optional(),
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: 'Status ou resposta inválidos.',
+        errors: parsed.error.flatten(),
+      });
+    }
+
+    const review = await prisma.review.update({
+      where: { id },
+      data: {
+        status: parsed.data.status,
+        response:
+          parsed.data.response === undefined
+            ? undefined
+            : parsed.data.response,
+      },
+    });
+
+    return res.json(review);
+  } catch (error) {
+    next(error);
+  }
+});
 app.delete('/api/admin/reviews/:id',requireAuth,async(req,res)=>{await prisma.review.delete({where:{id:Number(req.params.id)}});res.status(204).end();});
 app.patch('/api/admin/messages/:id',requireAuth,async(req,res)=>{res.json(await prisma.contactMessage.update({where:{id:Number(req.params.id)},data:{read:Boolean(req.body.read)}}));});
 app.post('/api/admin/gallery',requireAuth,upload.single('image'),async(req,res)=>{if(!req.file)return res.status(400).json({message:'Selecione uma imagem.'});const category=z.enum(['URETANO','EPOXI','TECNOCIMENTO']).parse(req.body.category);const url=`${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;res.status(201).json(await prisma.galleryImage.create({data:{title:req.body.title || null,category,url}}));});
